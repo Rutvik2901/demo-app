@@ -31,9 +31,10 @@ const styles = () => ({
     marginBottom: 12,
   },
 });
+
 interface IAppProps extends WithStyles<typeof styles> {}
+
 interface IAppState {
-  open: boolean;
   employee: employeeData;
   allEmployees: Array<employeeData>;
   isUpdate: boolean;
@@ -45,7 +46,6 @@ class App extends React.Component<IAppProps, IAppState> {
   constructor(props: IAppProps) {
     super(props);
     this.state = {
-      open: false,
       employee: { email: "", firstName: "", lastName: "", id: 0 },
       allEmployees: [],
       isUpdate: false,
@@ -66,7 +66,7 @@ class App extends React.Component<IAppProps, IAppState> {
   };
 
   public handleClose = () => {
-    this.setState({ open: false, employee: { email: "", firstName: "", lastName: "", id: 0 }, isUpdate: false });
+    this.setState({ employee: { email: "", firstName: "", lastName: "", id: 0 }, isUpdate: false });
   };
 
   public getEmployee = () => {
@@ -75,13 +75,13 @@ class App extends React.Component<IAppProps, IAppState> {
       .then((res) => this.setState({ allEmployees: res }));
   };
 
-  public handledone = (check: boolean) => {
-    if (check === false) {
+  public handledone = (isDone: boolean) => {
+    if (isDone === false) {
       this.handleClose();
     } else {
       if (!this.state.isUpdate) {
-        const temp: any = this.state.employee;
-        delete temp.id;
+        const employee: any = this.state.employee;
+        delete employee.id;
 
         fetch(this.baseUrl + "employee", {
           method: "POST",
@@ -89,7 +89,7 @@ class App extends React.Component<IAppProps, IAppState> {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(temp),
+          body: JSON.stringify(employee),
         }).then(() => {
           this.getEmployee();
         });
@@ -148,7 +148,6 @@ class App extends React.Component<IAppProps, IAppState> {
 
   render() {
     const { isUpdate, employee, allEmployees } = this.state;
-    console.log("employee: ", employee);
     return (
       <div className="App">
         <DialogComponent
@@ -157,7 +156,7 @@ class App extends React.Component<IAppProps, IAppState> {
           changeValues={(event) => this.getValues(event)}
           types={["email", "firstName", "lastName", "Add Employee"]}
           formType={isUpdate ? "Update Employee Details" : "Create Employee"}
-          handleDone={(check: boolean) => this.handledone(check)}
+          handleDone={(isDone: boolean) => this.handledone(isDone)}
         />
 
         {this.employeeRender()}

@@ -8,7 +8,6 @@ interface IDialogComponentProps {
   formType: String;
   isUpdate: boolean;
   handleDone: any;
-  // dialogCloseDone: () => void;
 }
 interface IDialogComponentState {
   dialogOpen: boolean;
@@ -24,7 +23,6 @@ class DialogComponent extends React.Component<IDialogComponentProps, IDialogComp
   }
 
   componentDidUpdate(prevProps: IDialogComponentProps, prevState: IDialogComponentState) {
-    console.log(prevProps.isUpdate, this.props.isUpdate);
     if (prevProps.isUpdate !== this.props.isUpdate && prevProps.isUpdate === false) {
       this.handleOpen();
     }

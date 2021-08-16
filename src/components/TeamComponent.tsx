@@ -36,8 +36,8 @@ export interface TeamModel {
 }
 
 interface UpdateMember {
-  add: Array<String>;
-  remove: Array<String>;
+  addEmployeeList: Array<String>;
+  removeEmployeeList: Array<String>;
 }
 
 interface ITeamComponentProps extends WithStyles<typeof styles> {
@@ -50,8 +50,7 @@ interface ITeamComponentState {
   currentSelected: Number;
   value: Array<String>;
   prevValue: UpdateMember;
-  add: boolean;
-  open: boolean;
+  employeeAddDialog: boolean;
   fromOnChange: boolean;
 }
 
@@ -65,9 +64,8 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
       allTeam: [],
       currentSelected: 0,
       value: [],
-      add: false,
-      open: false,
-      prevValue: { add: [], remove: [] },
+      employeeAddDialog: false,
+      prevValue: { addEmployeeList: [], removeEmployeeList: [] },
       fromOnChange: false,
     };
   }
@@ -79,29 +77,24 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
   componentDidUpdate(prevProps: ITeamComponentProps, prevState: ITeamComponentState) {
     const { value, prevValue, fromOnChange, currentSelected, allTeam } = this.state;
     if (prevState.value !== value && fromOnChange) {
-      const testing = value.filter((t) => prevState.value.indexOf(t) === -1);
-      const testing2 = prevState.value.filter((t) => value.indexOf(t) === -1);
-      console.log("prev: ", testing, testing2);
-      if (testing.length) {
-        console.log("prev herer -1", prevValue.remove.indexOf(testing[0]));
-        if (prevValue.remove.indexOf(testing[0]) !== -1) {
-          this.setState({ prevValue: { ...this.state.prevValue, remove: prevValue.remove.filter((e) => e !== testing[0]) } });
+      const employeeAdded = value.filter((t) => prevState.value.indexOf(t) === -1);
+      const employeeRemoved = prevState.value.filter((t) => value.indexOf(t) === -1);
+
+      const currentTeam = allTeam.filter((e) => e.id === currentSelected)[0];
+
+      if (employeeAdded.length) {
+        if (prevValue.removeEmployeeList.indexOf(employeeAdded[0]) !== -1) {
+          this.setState({ prevValue: { ...this.state.prevValue, removeEmployeeList: prevValue.removeEmployeeList.filter((e) => e !== employeeAdded[0]) } });
         }
-        const t = allTeam.filter((e) => e.id === currentSelected)[0];
-        console.log(
-          "prev herer0",
-          t.employee.filter((q) => q.email === testing[0])
-        );
-        if (t.employee.filter((t) => t.email === testing[0]).length === 0) this.setState({ prevValue: { ...this.state.prevValue, add: [...this.state.prevValue.add, testing[0]] } });
-      } else if (testing2.length) {
-        console.log("prev herer1", prevValue.add.indexOf(testing2[0]));
-        if (prevValue.add.indexOf(testing2[0]) !== -1) {
-          console.log("prev herer2", prevValue.add.indexOf(testing2[0]));
-          this.setState({ prevValue: { ...this.state.prevValue, add: prevValue.add.filter((e) => e != testing2[0]) } });
+
+        if (currentTeam.employee.filter((t) => t.email === employeeAdded[0]).length === 0)
+          this.setState({ prevValue: { ...this.state.prevValue, addEmployeeList: [...this.state.prevValue.addEmployeeList, employeeAdded[0]] } });
+      } else if (employeeRemoved.length) {
+        if (prevValue.addEmployeeList.indexOf(employeeRemoved[0]) !== -1) {
+          this.setState({ prevValue: { ...this.state.prevValue, addEmployeeList: prevValue.addEmployeeList.filter((e) => e != employeeRemoved[0]) } });
         }
-        const t = allTeam.filter((e) => e.id === currentSelected)[0];
-        if (t.employee.filter((r) => r.email === testing2[0]).length) {
-          this.setState({ prevValue: { ...this.state.prevValue, remove: [...this.state.prevValue.remove, testing2[0]] } });
+        if (currentTeam.employee.filter((r) => r.email === employeeRemoved[0]).length) {
+          this.setState({ prevValue: { ...this.state.prevValue, removeEmployeeList: [...this.state.prevValue.removeEmployeeList, employeeRemoved[0]] } });
         }
       }
       this.setState({ fromOnChange: false });
@@ -122,20 +115,20 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
       .then((res) => this.setState({ allTeam: res }));
   };
 
-  public handledone = (check: boolean) => {
+  public handleDone = (check: boolean) => {
     if (check === false) {
       this.handleClose();
     } else {
       if (!this.state.isUpdate) {
-        const temp: any = this.state.team;
-        delete temp.id;
+        const team: any = this.state.team;
+        delete team.id;
         fetch(this.baseUrl + "teams", {
           method: "POST",
           mode: "cors",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(temp),
+          body: JSON.stringify(team),
         }).then(() => {
           this.getTeam();
         });
@@ -172,39 +165,34 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
     let temp = this.state.allTeam.filter((e) => e.id === id);
     const temp1 = temp[0].employee.map((e) => e.email);
 
-    this.setState({ open: true, currentSelected: id, value: temp1, team: temp[0] });
+    this.setState({ employeeAddDialog: true, currentSelected: id, value: temp1, team: temp[0] });
   };
 
   handleDialogClose = () => {
     this.setState({
-      open: !this.state.open,
-      prevValue: { add: [], remove: [] },
+      employeeAddDialog: !this.state.employeeAddDialog,
+      prevValue: { addEmployeeList: [], removeEmployeeList: [] },
     });
   };
 
   handleAdd = () => {
     const { prevValue } = this.state;
     this.setState({
-      open: false,
-      add: false,
+      employeeAddDialog: false,
     });
-    const q: any = [];
-    const u: any = [];
-    // this.state.value.forEach((e) => {
-    //   q.push(this.props.employees.filter((t) => t.email === e)[0]);
-    // });
-    prevValue.add.forEach((e) => {
-      q.push(this.props.employees.filter((t) => t.email === e)[0]);
+    const addList: any = [];
+    const removeList: any = [];
+
+    prevValue.addEmployeeList.forEach((e) => {
+      addList.push(this.props.employees.filter((t) => t.email === e)[0]);
     });
 
-    const test = q.map((t: employeeData) => t.id);
+    const addEmployee = addList.map((t: employeeData) => t.id);
 
-    prevValue.remove.forEach((e) => {
-      u.push(this.props.employees.filter((t) => t.email === e)[0]);
+    prevValue.removeEmployeeList.forEach((e) => {
+      removeList.push(this.props.employees.filter((t) => t.email === e)[0]);
     });
-    const test1 = u.map((t: employeeData) => t.id);
-
-    // const test = q.map((t: any) => t.id);
+    const removeEmployee = removeList.map((t: employeeData) => t.id);
 
     fetch(this.baseUrl + "addMember/teams/" + this.state.currentSelected, {
       method: "POST",
@@ -212,18 +200,18 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ add: test, remove: test1 }),
+      body: JSON.stringify({ addEmployeeList: addEmployee, removeEmployeeList: removeEmployee }),
     }).then(() => {
       this.getTeam();
       this.setState({
-        prevValue: { add: [], remove: [] },
+        prevValue: { addEmployeeList: [], removeEmployeeList: [] },
       });
     });
   };
 
   public addTeamMembersComponent = () => {
     return (
-      <Dialog open={this.state.open} onClose={this.handleDialogClose} aria-labelledby="form-dialog-title">
+      <Dialog open={this.state.employeeAddDialog} onClose={this.handleDialogClose} aria-labelledby="form-dialog-title">
         <DialogTitle id="form-dialog-title">Subscribe</DialogTitle>
         <DialogContent>
           <Autocomplete
@@ -231,8 +219,6 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
             id="fixed-tags-demo"
             value={this.state.value}
             onChange={(event, newValue) => {
-              console.log("newValue: ", newValue);
-
               this.setState({ value: newValue, fromOnChange: true });
             }}
             options={this.props.employees.map((temp) => temp.email)}
@@ -292,7 +278,7 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
 
   render() {
     const { team, isUpdate, prevValue } = this.state;
-    console.log("prevValue: ", prevValue);
+
     return (
       <>
         <DialogComponent
@@ -301,7 +287,7 @@ class TeamComponent extends React.Component<ITeamComponentProps, ITeamComponentS
           changeValues={(event) => this.getValues(event)}
           types={["teamNumber", "teamName", "projectName", "Add Team"]}
           formType={isUpdate ? "Update Team Details" : "Create Team"}
-          handleDone={(check: boolean) => this.handledone(check)}
+          handleDone={(check: boolean) => this.handleDone(check)}
         />
         {this.teamRender()}
         {this.addTeamMembersComponent()}
